@@ -7,7 +7,11 @@ use serde::Serialize;
 use std::cmp;
 use std::fs;
 use std::sync::Mutex;
-use tauri::tray::TrayIconBuilder;
+use tauri::{
+    menu::{Menu, MenuItem},
+    tray::TrayIconBuilder,
+    Manager,
+};
 
 #[derive(Serialize)]
 pub struct Task {
@@ -162,6 +166,45 @@ pub fn run() {
 
     // TODO: system tray
     tauri::Builder::default()
+        .setup(|app| {
+            let quit = MenuItem::with_id(app, "quit", "Quit Memobot", true, None::<&str>)?;
+            let hide = MenuItem::with_id(app, "hide", "Hide", true, None::<&str>)?;
+            let show = MenuItem::with_id(app, "show", "Show", true, None::<&str>)?;
+            let menu = Menu::with_items(app, &[&quit, &hide, &show])?;
+
+            let _tray = TrayIconBuilder::new()
+                // need .menu() to be visible, even if menu empty
+                .menu(&menu)
+                // .icon(app.default_window_icon().unwrap().clone())
+                .on_menu_event(|app, event| match event.id.as_ref() {
+                    "quit" => {
+                        println!("quit menu item clicked");
+                        app.exit(0);
+                    }
+                    "hide" => {
+                        // use tauri::Manager -> need it to use get_window
+                        let window = app.get_window("main").unwrap();
+                        let _ = window.hide();
+                    }
+                    "show" => {
+                        let window = app.get_window("main").unwrap();
+                        let _ = window.show();
+                    }
+                    _ => {
+                        println!("menu item {:?} not handled", event.id);
+                    }
+                })
+                .build(app);
+            Ok(())
+        })
+        .on_window_event(|window, event| match event {
+            tauri::WindowEvent::CloseRequested { api, .. } => {
+                // prevent app close when close window => keep systemtray available
+                window.hide().unwrap();
+                api.prevent_close();
+            }
+            _ => {}
+        })
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             get_all,
