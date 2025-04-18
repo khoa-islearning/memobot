@@ -1,5 +1,4 @@
 import { invoke } from "@tauri-apps/api/core";
-import axios from "axios";
 import { useState } from "react";
 type AddCardProp = {
   updateFunction: Function;

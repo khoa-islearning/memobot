@@ -175,10 +175,9 @@ pub fn run() {
             let _tray = TrayIconBuilder::new()
                 // need .menu() to be visible, even if menu empty
                 .menu(&menu)
-                // .icon(app.default_window_icon().unwrap().clone())
+                .icon(app.default_window_icon().unwrap().clone())
                 .on_menu_event(|app, event| match event.id.as_ref() {
                     "quit" => {
-                        println!("quit menu item clicked");
                         app.exit(0);
                     }
                     "hide" => {
